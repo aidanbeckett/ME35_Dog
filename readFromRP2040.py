@@ -1,8 +1,8 @@
 import asyncio
 
-async def read_camera():
+async def read_2040():
     while True:
-        #read camera
+        #read 2040
         await asyncio.sleep(0.1)
         
 async def walking():
@@ -16,7 +16,7 @@ async def sit():
         await asyncio.sleep(0.1)
 
 async def main(duration):
-    camera_task = asyncio.create_task(read_camera())
+    rp2040_task = asyncio.create_task(read_2040())
     movement_task = asyncio.create_task(walking())
     sitting_task = asyncio.create_task(sit())
 
