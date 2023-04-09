@@ -38,63 +38,42 @@ for s in servos:
 #Define angles for taking a step
 theta1 = [-64,-68,-71,-73,-75,-76,-76,-75,-74,-72,-68,-65,-61,-57,-52,-47,-43,-39,-36,-33]
 theta2 = [-9,-4,1,5,9,13,16,18,20,21,21,20,18,16,12,8,4,-1,-5,-11]
-    
-#Define angles for pushing the grounded legs forward
-drift1 = [-33,-35,-37,-39,-41,-43,-45,-47,-49,-51,-53,-54,-56,-57,-59,-60,-61,-62,-63,-64]
-drift2 = [-11,-9,-9,-8,-7,-6,-6,-5,-5,-5,-5,-5,-5,-5,-6,-6,-7,-7,-8,-9]
 
-def step(legs):
-    # if legs = 0, the front left and back right move forward
-    # if legs = 1 the front right and back left move forward
-    
-    # Loop through each angle value
-    for i in range(len(theta1)):
-        time.sleep(0.05)
-        # Set each servo to an angle in the series
-        for j in range(len(servos)):
-            # Shift which servos are moving based on which legs are taking a step
-            a = (j+(2*legs))%8
-            if a%4 == 0:
-                Servo(j).value(theta1[count])
-            elif a%4 == 1:
-                Servo(j).value(theta2[count])
-            elif a%4 == 2:
-                Servo(j).value(drift1[count])
-            else:
-                Servo(j).value(drift2[count])
+#Define angles for pushing the grounded legs forward
+drift1 = [-33,-33,-34,-35,-36,-36,-37,-38,-38,-39,-40,-40,-41,-42,-42,-43,-44,-44,-45,-46,\
+          -46,-47,-48,-48,-49,-49,-50,-50,-51,-52,-52,-53,-53,-54,-54,-55,-55,-56,-56,-57,\
+          -57,-58,-58,-59,-59,-59,-60,-60,-61,-61,-61,-62,-62,-62,-63,-63,-63,-64,-64,-64]
+drift2 = [-11,-10,-10,-10,-9,-9,-9,-8,-8,-8,-7,-7,-7,-7,-7,-6,-6,-6,-6,-6,-6,-5,-5,-5,-5,-5,\
+          -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-6,-6,-6,-6,-6,-6,-7,-7,-7,\
+          -7,-8,-8,-8,-8,-9,-9]
+cycle1 = theta1+drift1
+cycle2 = theta2+drift2
+
+def get_angle(curr,joint,shift):
+    # If joint = 0 the motor is a hip joint, if 1 it is a knee joint
+    # Shift is dependent on which leg the motor is on
+    l = len(cycle1)
+    phase_shift = len(theta1)*shift
+    if joint == 0:
+        return cycle1[(curr+phase_shift)%l]
+    else:
+        return cycle2[(curr+phase_shift)%l]
         
 def walk():
-    
-    # Move legs to starting position
-    for i in range(len(servos)):
-        if i%2==0:
-            Servo[i].value(drift1[round(len(drift1)/2)])
-        else:
-            Servo[i].value(drift2[round(len(drift1)/2)])
-     
-    time.sleep(0.5)
-    
-    # Take first step
-    for i in range(len(theta1)/2):
-        count = i+len(theta1)/2
-        time.sleep(0.05)
-        for j in range(len(servos)):
-            if j%4 == 0:
-                Servo(j).value(theta1[count])
-            elif j%4 == 1:
-                Servo(j).value(theta2[count])
-            elif j%4 == 2:
-                Servo(j).value(drift1[count])
-            else:
-                Servo(j).value(drift2[count])
-        
-    listen(1)
-    stepcount = 1
-    
-    # Alternate steps continuously while listening for new commands
-    for i in range(4):
-        step(stepcount%2)
-        stepcount += 1
+    count = 0
+    while count < 2:
+        # Loop through each angle value
+        for i in range(len(cycle1)):
+            time.sleep(0.05)
+            # Set each servo to an angle in the series
+            for j in range(0,4):
+                # Each servo gets an angle based on which joint and leg it is on
+                Servo(j).value(get_angle(i,i%2,round(j/2-0.25)))
+            for j in range(4,8):
+                # Angles for servos on the left side of the dog are negative because the servos are
+                # oriented in the opposite direction
+                Servo(j).value(-get_angle(i,i%2,round(j/2-0.25)))
+        count+=1
 
 def sit_execute():
     
