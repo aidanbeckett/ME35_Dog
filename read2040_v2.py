@@ -52,7 +52,7 @@ def get_angle(curr,joint,shift):
     # If joint = 0 the motor is a hip joint, if 1 it is a knee joint
     # Shift is dependent on which leg the motor is on
     l = len(cycle1)
-    phase_shift = len(theta1)*shift
+    phase_shift = l/4*shift
     if joint == 0:
         return cycle1[(curr+phase_shift)%l]
     else:
