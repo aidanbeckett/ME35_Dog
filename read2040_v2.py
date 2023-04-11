@@ -78,9 +78,9 @@ def sit_execute():
     
     # Move legs to sitting position
     Servo(0).value(75)
-    Servo(6).value(75)
+    Servo(6).value(-75)
     Servo(1).value(-75)
-    Servo(7).value(-75)
+    Servo(7).value(75)
     Servo(2).value(0)
     Servo(3).value(0)
     Servo(4).value(0)
