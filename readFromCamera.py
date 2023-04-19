@@ -4,20 +4,18 @@ import machine
 # Send out to External RP2040
 analogOutput = machine.Pin(26, machine.Pin.OUT)
 
-# Read from Camera
-analogInput = machine.Pin(27, machine.Pin.IN)
-
 reading = 0
 
 WALKING = 0
 SIT = 0
 
+#TODO: Change to MQTT Reading from camera and adafruit
 async def read_camera():
     global reading
 
     while True:
         #read camera
-        reading = analogInput.read()
+        
         await asyncio.sleep(0.1)
         
 async def walking():

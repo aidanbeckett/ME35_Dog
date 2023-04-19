@@ -10,7 +10,7 @@ topic = 'walk'
 # PC MQTT Overall Setup
 toggleAdafruitDashboardSetup = False
 
-compClient = mqtt.Client('dog')
+compClient = mqtt.Client('nullThink')
 
 compClient.connect(ip)
 

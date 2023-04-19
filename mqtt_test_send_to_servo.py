@@ -23,7 +23,7 @@ def whenCalled(topic, msg):
     if message == 'start':
         send_to_legs()
     time.sleep(20)
-    
+#TODO: Add function that checks message and executes function based on message sent
 def send_to_legs():
     while True:
         led.off()
