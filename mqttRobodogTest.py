@@ -29,6 +29,7 @@ import sys
 aio = Adafruit_IO.MQTTClient(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
 
 initiateProtocolFeed = "status"
+commandFeed = "iehal"
 
 # Define callback functions which will be called when certain events happen.
 def connected(client):
@@ -39,10 +40,12 @@ def connected(client):
     print('Connected to Adafruit IO!  Listening for {0} changes...'.format("all"))
     # Subscribe to changes on a feed.
     client.subscribe(initiateProtocolFeed)
+    client.subscribe(commandFeed)
 
 def subscribe(client, userdata, mid, granted_qos):
     # This method is called when the client subscribes to a new feed.
     print('Subscribed to {0} with QoS {1}'.format(initiateProtocolFeed, granted_qos[0]))
+    print('Subscribed to {0} with QoS {1}'.format(commandFeed, granted_qos[0]))
 
 def disconnected(client):
     # Disconnected function will be called when the client disconnects.
@@ -55,7 +58,6 @@ def message(client, feed_id, payload):
     # the new value.
     print('Feed "{0}" received new value: {1}'.format(feed_id, payload))
     send_message(payload)
-    # if(feed_id == initiateProtocolFeed):
         
     # else:
     #     if(payload == "0"):

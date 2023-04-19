@@ -2,31 +2,27 @@ import time
 from machine import Pin
 import uasyncio as asyncio
 import machine
-from servo import servo2040
+from servo import servo2040, Servo
 from pimoroni import Analog, AnalogMux, Button
 
 # TODO: Compartmentalize pin setup to make code look cleaner.
 
 #import walk function from external file on board. same for sit
-sen_adc_walk = Analog(servo2040.SHARED_ADC)
-sen_adc_sit = Analog(servo2040.SHARED_ADC)
-sen_adc_dance = Analog(servo2040.SHARED_ADC)
+sen_adc = Analog(servo2040.SHARED_ADC)
 
-mux_walk = AnalogMux(servo2040.ADC_ADDR_0, servo2040.ADC_ADDR_1, servo2040.ADC_ADDR_2, muxed_pin=machine.Pin(servo2040.SHARED_ADC))
-mux_sit = AnalogMux(servo2040.ADC_ADDR_0, servo2040.ADC_ADDR_1, servo2040.ADC_ADDR_2, muxed_pin=machine.Pin(servo2040.SHARED_ADC))
-mux_dance = AnalogMux(servo2040.ADC_ADDR_0, servo2040.ADC_ADDR_1, servo2040.ADC_ADDR_2, muxed_pin=machine.Pin(servo2040.SHARED_ADC))
+mux = AnalogMux(servo2040.ADC_ADDR_0, servo2040.ADC_ADDR_1, servo2040.ADC_ADDR_2, muxed_pin=machine.Pin(servo2040.SHARED_ADC))
 
 # Set up the sensor addresses and have them pulled down by default
 sensor_addrs = list(range(servo2040.SENSOR_1_ADDR, servo2040.SENSOR_6_ADDR + 1))
-mux_walk.configure_pull(sensor_addrs[0], machine.Pin.PULL_DOWN)
-mux_sit.configure_pull(sensor_addrs[1], machine.Pin.PULL_DOWN)
-mux_dance.configure_pull(sensor_addrs[2], machine.Pin.PULL_DOWN)
-
+for address in sensor_addrs:
+    mux.configure_pull(address, machine.Pin.PULL_DOWN)
 
 # Read from RP2040
 walk_input = sensor_addrs[0]
 sit_input = sensor_addrs[1]
 dance_input = sensor_addrs[2]
+start_input = sensor_addrs[3]
+stop_input = sensor_addrs[4]
 
 # Create a list of servos for pins 0 to 7. Up to 16 servos can be created
 START_PIN = servo2040.SERVO_1
@@ -54,6 +50,10 @@ cycle2 = [45.6,53.5,60.3,66,71.3,76.3,80.1,82.4,84.2,85.1,85,83.8,81.8,79.3,75.3
         50.9,50.8,50.7,50.6,50.4,50.2,50,49.8,49.6,49.4,49.1,48.8,48.5,48.2,47.9,47.6,47.2,46.9,46.5,\
         46.1,45.6]
 
+allowReading = False
+previousCommand = ""
+
+# TODO: Broken rn. 
 def get_angle(curr,joint,shift):
     # If joint = 0 the motor is a hip joint, if 1 it is a knee joint
     # Shift is dependent on which leg the motor is on
@@ -91,48 +91,71 @@ def sit_execute():
     Servo(3).value(0)
     Servo(4).value(0)
     Servo(5).value(0)
-# TODO: For all async checking loops: make so that current command is checked against
-# previous command, if same commands, dont run, if not, run and update previous command
-# to current command.
-async def walking():
-    mux_walk.select(walk_input)
 
-    while True:
-        sensor_1_reading = round(sen_adc_walk.read_voltage(), 3)
-        if(sensor_1_reading > 2.5):
-            walk()
+async def walking():
+    global allowReading
+    global previousCommand
+
+    while allowReading:
+        mux.select(walk_input)
+        sensor_1_reading = round(sen_adc.read_voltage(), 3)
+        if(sensor_1_reading > 2.5 and previousCommand != "walk"):
+            #walk()
             print("Should Walk")
+            previousCommand = "walk"
         await asyncio.sleep(0.1)
 
 async def sit():
-    mux_sit.select(sit_input)
+    global allowReading
+    global previousCommand
     
-    while True:
+    while allowReading:
         # sit (analog write)
-        sensor_2_reading = round(sen_adc_sit.read_voltage(), 3)
-        if(sensor_2_reading > 2.5):
+        mux.select(sit_input)
+        sensor_2_reading = round(sen_adc.read_voltage(), 3)
+        if(sensor_2_reading > 2.5 and previousCommand != "sit"):
             #execute sit function
             sit_execute()
             print("Should sit")
+            previousCommand = "sit"
         await asyncio.sleep(0.1)
 
-#TODO: Add global variable to check for start command. Update loops to not run until
-# global is set
-
-# async def toggle_activate():
-#     while True:
-#         await asyncio.sleep(0.1)
-
-async def dance():
-    mux_dance.select(dance_input)
+async def toggle_activate():
+    global allowReading
+    global previousCommand
+    
+    # mux_stop.select(stop_input)
 
     while True:
+        mux.select(start_input)
+        sensor_4_reading = round(sen_adc.read_voltage(), 3)
+        sensor_5_reading = round(sen_adc.read_voltage(),3)
+
+        if(sensor_4_reading > 2.5 and previousCommand != "start"):
+            allowReading = True
+            previousCommand = "start"
+            print("should start")
+            break
+        # elif(sensor_5_reading > 2.5 and previousCommand != "stop"):
+        #     allowReading = False
+        #     previousCommand = "stop"
+        #     print("should stop")
+
+    await asyncio.sleep(0.1)
+
+async def dance():
+    global allowReading
+    global previousCommand
+
+    while allowReading:
         # dance (analog write)
-        sensor_3_reading = round(sen_adc_dance.read_voltage(), 3)
-        if(sensor_3_reading > 2.5):
+        mux.select(dance_input)
+        sensor_3_reading = round(sen_adc.read_voltage(), 3)
+        if(sensor_3_reading > 2.5 and previousCommand != "dance"):
             #execute dance function
             dance_execute()
             print("Should dance")
+            previousCommand = "dance"
         await asyncio.sleep(0.1)
 
 def dance_execute():
@@ -140,6 +163,7 @@ def dance_execute():
     print("I like to move it move it")
 
 async def main(duration):
+    activation_task = asyncio.create_task(toggle_activate())
     movement_task = asyncio.create_task(walking())
     sitting_task = asyncio.create_task(sit())
     dancing_task = asyncio.create_task(dance())
@@ -153,4 +177,4 @@ def test(duration):
         print("Stopped")
 
 
-test(10)
+test(100)
