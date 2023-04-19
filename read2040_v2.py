@@ -30,10 +30,6 @@ servos = [Servo(i) for i in range(START_PIN, END_PIN + 1)]
 # Front right leg: Servo(2) for hip joint and Servo(3) for knee joint
 # Front left leg: Servo(4) for hip joint and Servo(5) for knee joint
 # Back right leg: Servo(6) for hip joint and Servo(7) for knee joint
-
-# Enable all servos (this puts them at the middle)
-for s in servos:
-    s.enable()
         
 #Define angles for taking a step
 cycle1 = [-39.4,-44.3,-48.2,-51.3,-53.8,-55.5,-56.1,-55.6,-54.6,-52.9,-50.5,-47.4,-43.9,-40.2,\
@@ -57,6 +53,16 @@ def get_angle(curr,joint,shift):
         return cycle1[(curr+phase_shift)%l]
     else:
         return cycle2[(curr+phase_shift)%l]
+       
+def dance_angle(curr,joint,shift):
+    # If joint = 0 the motor is a hip joint, if 1 it is a knee joint
+    # Shift is dependent on which leg the motor is on
+    l = len(cycle1)
+    phase_shift = len(cycle1)/4*shift
+    if joint == 0:
+        return dance1[(curr+phase_shift)%l]
+    else:
+        return dance2[(curr+phase_shift)%l]
         
 def walk():
     count = 0
@@ -68,10 +74,28 @@ def walk():
             for j in range(0,4):
                 # Each servo gets an angle based on which joint and leg it is on
                 Servo(j).value(get_angle(i,i%2,round(j/2-0.25)))
+                time.sleep(0.05)
             for j in range(4,8):
                 # Angles for servos on the left side of the dog are negative because the servos are
                 # oriented in the opposite direction
                 Servo(j).value(-get_angle(i,i%2,round(j/2-0.25)))
+                time.sleep(0.05)
+        count+=1
+
+def dance():
+    count = 0
+    while count < 2:
+        # Loop through each angle value
+        for i in range(len(dance1)):
+            time.sleep(0.05)
+            # Set each servo to an angle in the series
+            for j in range(0,4):
+                # Each servo gets an angle based on which joint and leg it is on
+                Servo(j).value(dance_angle(i,i%2,round(j/2-0.25)))
+            for j in range(4,8):
+                # Angles for servos on the left side of the dog are negative because the servos are
+                # oriented in the opposite direction
+                Servo(j).value(-dance_angle(i,i%2,round(j/2-0.25)))
         count+=1
 
 def sit_execute():

@@ -1,0 +1,8 @@
+--------- Basic Commands ----------
+walk - the dog performs one cycle of the gait
+start - the dog is given a signal to begin reading communications
+stop - the dog finishes its walk cycle and then stops walking ( also temporarily stops reading communications?)
+
+-------- Additional Commands ------
+dance - the dog performs a little dancey dance :)
+
