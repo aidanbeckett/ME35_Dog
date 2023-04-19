@@ -5,6 +5,8 @@ import machine
 from servo import servo2040
 from pimoroni import Analog, AnalogMux, Button
 
+# TODO: Compartmentalize pin setup to make code look cleaner.
+
 #import walk function from external file on board. same for sit
 sen_adc_walk = Analog(servo2040.SHARED_ADC)
 sen_adc_sit = Analog(servo2040.SHARED_ADC)
