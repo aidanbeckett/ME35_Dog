@@ -4,6 +4,7 @@ import uasyncio as asyncio
 import machine
 from servo import servo2040, Servo
 from pimoroni import Analog, AnalogMux, Button
+from angles import cycle1, cycle2, dance1, dance2
 
 # TODO: Compartmentalize pin setup to make code look cleaner.
 
@@ -27,28 +28,11 @@ stop_input = sensor_addrs[4]
 # Create a list of servos for pins 0 to 7. Up to 16 servos can be created
 START_PIN = servo2040.SERVO_1
 END_PIN = servo2040.SERVO_8
-servos = [Servo(i) for i in range(START_PIN, END_PIN + 1)]
+servos = ServoCluster(pio=0, sm=0, pins=list(range(START_PIN, END_PIN + 1)))
 # Back right leg: Servo(0) for hip joint and Servo(1) for knee joint
 # Front right leg: Servo(2) for hip joint and Servo(3) for knee joint
 # Front left leg: Servo(4) for hip joint and Servo(5) for knee joint
 # Back right leg: Servo(6) for hip joint and Servo(7) for knee joint
-
-# Enable all servos (this puts them at the middle)
-for s in servos:
-    s.enable()
-        
-#Define angles for taking a step
-cycle1 = [-39.4,-44.3,-48.2,-51.3,-53.8,-55.5,-56.1,-55.6,-54.6,-52.9,-50.5,-47.4,-43.9,-40.2,\
-        -35.8,-30.9,-26.5,-22.2,-17.6,-12.6,-12.6,-13.3,-14,-14.8,-15.5,-16.2,-16.8,-17.5,-18.2,\
-        -18.8,-19.5,-20.1,-20.7,-21.3,-21.9,-22.5,-23.1,-23.7,-24.3,-24.8,-25.4,-25.9,-26.4,-27,\
-        -27.5,-28,-28.5,-29,-29.4,-29.9,-30.4,-30.8,-31.3,-31.7,-32.1,-32.5,-32.9,-33.3,-33.7,-34.1,\
-        -34.4,-34.8,-35.2,-35.5,-35.8,-36.1,-36.4,-36.7,-37,-37.3,-37.6,-37.8,-38.1,-38.3,-38.5,-38.7,\
-        -38.9,-39.1,-39.3,-39.4]
-cycle2 = [45.6,53.5,60.3,66,71.3,76.3,80.1,82.4,84.2,85.1,85,83.8,81.8,79.3,75.3,70,64.6,58.6,51.6,\
-        43.4,43.4,44,44.5,44.9,45.4,45.8,46.2,46.6,47,47.4,47.7,48.1,48.4,48.7,49,49.2,49.5,49.7,49.9,\
-        50.1,50.3,50.5,50.6,50.8,50.9,51,51.1,51.2,51.2,51.3,51.3,51.3,51.3,51.3,51.3,51.2,51.2,51.1,51,\
-        50.9,50.8,50.7,50.6,50.4,50.2,50,49.8,49.6,49.4,49.1,48.8,48.5,48.2,47.9,47.6,47.2,46.9,46.5,\
-        46.1,45.6]
 
 allowReading = False
 previousCommand = ""
@@ -58,39 +42,71 @@ def get_angle(curr,joint,shift):
     # If joint = 0 the motor is a hip joint, if 1 it is a knee joint
     # Shift is dependent on which leg the motor is on
     l = len(cycle1)
-    phase_shift = l/4*shift
+    phase_shift = int(len(cycle1)/4*shift)
     if joint == 0:
         return cycle1[(curr+phase_shift)%l]
     else:
         return cycle2[(curr+phase_shift)%l]
+    
+def dance_angle(curr,joint,shift):
+    # If joint = 0 the motor is a hip joint, if 1 it is a knee joint
+    # Shift is dependent on which leg the motor is on
+    l = len(cycle1)
+    phase_shift = int(len(cycle1)/4*shift)
+    if joint == 0:
+        return dance1[(curr+phase_shift)%l]
+    else:
+        return dance2[(curr+phase_shift)%l]
         
 def walk():
     count = 0
     while count < 2:
         # Loop through each angle value
         for i in range(len(cycle1)):
-            time.sleep(0.05)
+            time.sleep(0.02)
             # Set each servo to an angle in the series
             for j in range(0,4):
                 # Each servo gets an angle based on which joint and leg it is on
-                Servo(j).value(get_angle(i,i%2,round(j/2-0.25)))
+                servos.value(j, get_angle(i,j%2,round(j/2-0.25)), load=False)
             for j in range(4,8):
                 # Angles for servos on the left side of the dog are negative because the servos are
                 # oriented in the opposite direction
-                Servo(j).value(-get_angle(i,i%2,round(j/2-0.25)))
+                servos.value(j, -get_angle(i,j%2,round(j/2-0.25)), load=False)
+            servos.load()
+        
+        count+=1
+        
+def dance_execute():
+    print("I like to move it move it")
+    count = 0
+    while count < 3:
+        # Loop through each angle value
+        for i in range(len(dance1)):
+            time.sleep(0.02)
+            # Set each servo to an angle in the series
+            for j in range(0,4):
+                # Each servo gets an angle based on which joint and leg it is on
+                servos.value(j, dance_angle(i,j%2,round(j/2-0.25)), load=False)
+            for j in range(4,8):
+                # Angles for servos on the left side of the dog are negative because the servos are
+                # oriented in the opposite direction
+                servos.value(j, -dance_angle(i,j%2,round(j/2-0.25)), load=False)
+            servos.load()
+        
         count+=1
 
 def sit_execute():
     
     # Move legs to sitting position
-    Servo(0).value(75)
-    Servo(6).value(-75)
-    Servo(1).value(-75)
-    Servo(7).value(75)
-    Servo(2).value(0)
-    Servo(3).value(0)
-    Servo(4).value(0)
-    Servo(5).value(0)
+    servos.value(0,75,load=False)
+    servos.value(6,-75,load=False)
+    servos.value(1,-75,load=False)
+    servos.value(7,75,load=False)
+    servos.value(2,0,load=False)
+    servos.value(3,0,load=False)
+    servos.value(4,0,load=False)
+    servos.value(5,0,load=False)
+    servos.load()
 
 async def walking():
     global allowReading
@@ -100,7 +116,7 @@ async def walking():
         mux.select(walk_input)
         sensor_1_reading = round(sen_adc.read_voltage(), 3)
         if(sensor_1_reading > 2.5 and previousCommand != "walk"):
-            #walk()
+            walk()
             print("Should Walk")
             previousCommand = "walk"
         await asyncio.sleep(0.1)
@@ -157,10 +173,7 @@ async def dance():
             print("Should dance")
             previousCommand = "dance"
         await asyncio.sleep(0.1)
-
-def dance_execute():
-    # Add dancing script here :)
-    print("I like to move it move it")
+    
 
 async def main(duration):
     activation_task = asyncio.create_task(toggle_activate())
