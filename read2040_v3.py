@@ -60,7 +60,7 @@ def dance_angle(curr,joint,shift):
         
 def walk():
     count = 0
-    while count < 2:
+    while count < 2: #How many step cycles it will take per function call
         # Loop through each angle value
         for i in range(len(cycle1)):
             time.sleep(0.02)
@@ -79,7 +79,7 @@ def walk():
 def dance_execute():
     print("I like to move it move it")
     count = 0
-    while count < 3:
+    while count < 3: #How many step cycles it will take per function call
         # Loop through each angle value
         for i in range(len(dance1)):
             time.sleep(0.02)
