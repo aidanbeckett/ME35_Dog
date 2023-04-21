@@ -100,14 +100,14 @@ def sit_execute():
     
     # Move legs to sitting position
 
-    servos.value(0,75,load=False)
-    servos.value(6,-75,load=False)
-    servos.value(1,-75,load=False)
-    servos.value(7,75,load=False)
-    servos.value(2,0,load=False)
-    servos.value(3,0,load=False)
-    servos.value(4,0,load=False)
-    servos.value(5,0,load=False)
+    servos.value(0,-65,load=False)
+    servos.value(6,65,load=False)
+    servos.value(1,75,load=False)
+    servos.value(7,-75,load=False)
+    servos.value(2,-65,load=False)
+    servos.value(3,75,load=False)
+    servos.value(4,65,load=False)
+    servos.value(5,-75,load=False)
     servos.load()
 
 async def walking():
