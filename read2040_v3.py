@@ -2,7 +2,7 @@ import time
 from machine import Pin
 import uasyncio as asyncio
 import machine
-from servo import servo2040, Servo
+from servo import servo2040, ServoCluster
 from pimoroni import Analog, AnalogMux, Button
 from angles import cycle1, cycle2, dance1, dance2
 
@@ -23,11 +23,11 @@ walk_input = sensor_addrs[0]
 sit_input = sensor_addrs[1]
 dance_input = sensor_addrs[2]
 start_input = sensor_addrs[3]
-stop_input = sensor_addrs[4]
+turnhead_input = sensor_addrs[5]
 
 # Create a list of servos for pins 0 to 7. Up to 16 servos can be created
 START_PIN = servo2040.SERVO_1
-END_PIN = servo2040.SERVO_8
+END_PIN = servo2040.SERVO_12
 servos = ServoCluster(pio=0, sm=0, pins=list(range(START_PIN, END_PIN + 1)))
 # Back right leg: Servo(0) for hip joint and Servo(1) for knee joint
 # Front right leg: Servo(2) for hip joint and Servo(3) for knee joint
@@ -89,6 +89,7 @@ def dance_execute():
                 servos.value(j, dance_angle(i,j%2,round(j/2-0.25)), load=False)
             for j in range(4,8):
                 # Angles for servos on the left side of the dog are negative because the servos are
+
                 # oriented in the opposite direction
                 servos.value(j, -dance_angle(i,j%2,round(j/2-0.25)), load=False)
             servos.load()
@@ -98,6 +99,7 @@ def dance_execute():
 def sit_execute():
     
     # Move legs to sitting position
+
     servos.value(0,75,load=False)
     servos.value(6,-75,load=False)
     servos.value(1,-75,load=False)
@@ -116,9 +118,11 @@ async def walking():
         mux.select(walk_input)
         sensor_1_reading = round(sen_adc.read_voltage(), 3)
         if(sensor_1_reading > 2.5 and previousCommand != "walk"):
+            previousCommand = "walk"
             walk()
             print("Should Walk")
-            previousCommand = "walk"
+            previousCommand = ""
+            wag_execute()
         await asyncio.sleep(0.1)
 
 async def sit():
@@ -131,16 +135,16 @@ async def sit():
         sensor_2_reading = round(sen_adc.read_voltage(), 3)
         if(sensor_2_reading > 2.5 and previousCommand != "sit"):
             #execute sit function
+            previousCommand = "sit"
             sit_execute()
             print("Should sit")
-            previousCommand = "sit"
+            previousCommand = ""
+            wag_execute()
         await asyncio.sleep(0.1)
 
 async def toggle_activate():
     global allowReading
     global previousCommand
-    
-    # mux_stop.select(stop_input)
 
     while True:
         mux.select(start_input)
@@ -151,11 +155,8 @@ async def toggle_activate():
             allowReading = True
             previousCommand = "start"
             print("should start")
+            wag_execute()
             break
-        # elif(sensor_5_reading > 2.5 and previousCommand != "stop"):
-        #     allowReading = False
-        #     previousCommand = "stop"
-        #     print("should stop")
 
     await asyncio.sleep(0.1)
 
@@ -169,10 +170,45 @@ async def dance():
         sensor_3_reading = round(sen_adc.read_voltage(), 3)
         if(sensor_3_reading > 2.5 and previousCommand != "dance"):
             #execute dance function
+            previousCommand = "dance"
             dance_execute()
             print("Should dance")
-            previousCommand = "dance"
+            previousCommand = ""
         await asyncio.sleep(0.1)
+
+async def headPan():
+    global allowReading
+    global previousCommand
+
+    while allowReading:
+        # dance (analog write)
+        mux.select(turnhead_input)
+        sensor_6_reading = round(sen_adc.read_voltage(), 3)
+        if(sensor_6_reading > 2.5 and previousCommand != "headPanLeft"):
+            #execute dance function
+            previousCommand = "headPanLeft"
+            pan_left_execute()
+            print("Should pan left")
+        elif(sensor_6_reading > 2.5 and previousCommand != "headPanRight"):
+            #execute dance function
+            previousCommand = "headPanRight"
+            pan_right_execute()
+            print("Should pan right")
+        await asyncio.sleep(0.1)
+
+def wag_execute():
+    print("Wag :)")
+    for i in range(3):
+        servos.value(8, -45)
+        time.sleep(0.5)
+        servos.value(8, 45)
+        time.sleep(0.5)
+
+def pan_left_execute():
+    servos.value(10, -45)
+
+def pan_right_execute():
+    servos.value(10, 45)
     
 
 async def main(duration):
@@ -180,6 +216,7 @@ async def main(duration):
     movement_task = asyncio.create_task(walking())
     sitting_task = asyncio.create_task(sit())
     dancing_task = asyncio.create_task(dance())
+    head_turn_task = asyncio.create_task(headPan())
 
     await asyncio.sleep(duration)
 
@@ -190,4 +227,4 @@ def test(duration):
         print("Stopped")
 
 
-test(100)
+test(3000)

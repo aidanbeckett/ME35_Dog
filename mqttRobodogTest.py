@@ -9,10 +9,14 @@ topic = 'walk'
 
 # PC MQTT Overall Setup
 toggleAdafruitDashboardSetup = False
+atAmazon = False
 
 compClient = mqtt.Client('nullThink')
 
-compClient.connect(ip)
+if(atAmazon):
+    compClient.connect(hotspotip)
+else:
+    compClient.connect(ip)
 
 def on_message(user, userName, msg):
     print("Message Received: {0}".format(msg.payload.decode()))
