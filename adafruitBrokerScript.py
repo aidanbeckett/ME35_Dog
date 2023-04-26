@@ -1,3 +1,5 @@
+#NOTE: Must be run on separate computer. Can't be run on microcontrollers
+
 import time
 import os
 import paho.mqtt.client as mqtt #import the client1
