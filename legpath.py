@@ -4,12 +4,12 @@ from scipy.interpolate import PchipInterpolator
 import matplotlib.pyplot as plt
 import numpy as np
 
-x_knots = np.array([-6, -5, -2.5, 0.5, 3.5, 6, 7])
-y_knots = np.array([-17, -15, -13.5, -13, -13.5, -15, -17])
+x_knots = np.array([-6, -5, -2.5, 0.5, 3.5, 6, 7])/2.2 - 1
+y_knots = np.array([-17, -15, -13.5, -13, -13.5, -15, -17]) * 13/17 -4
 dy_knots = np.array([5,1,0.5,0,-0.5,-1,-5])
 
 t_knots = np.linspace(0, 2.5, 7)
-t_eval = np.linspace(0, 2.5, 50)
+t_eval = np.linspace(0, 2.5, 20)
 
 # Use 3 different spline functions to interpolate the x and y knots
 c_spline_x = CubicSpline(t_knots, x_knots, bc_type='natural')
@@ -33,11 +33,11 @@ plt.plot(cubic_x,cubic_y, label='Cubic Spline')
 plt.plot(hermite_x,hermite_y, label='Cubic Hermite')
 plt.plot(pchip_x,pchip_y, label='Pchip Interpolator')
 
-plt.ylim(-17, -8)
-plt.xlim(-8.5,8.5)
+plt.ylim(-18, 0)
+plt.xlim(-9,9)
 plt.legend()
 
 plt.show()
 
-# np.savetxt('/Users/aidanbeckett/Downloads/ME35_21-main/SampleCodes/Motor Carrier/x_vals.csv', pchip_x, delimiter=',')
-# np.savetxt('/Users/aidanbeckett/Downloads/ME35_21-main/SampleCodes/Motor Carrier/legpath.csv', pchip_y, delimiter=',')
+#np.savetxt('/Users/aidanbeckett/Library/Mobile Documents/com~apple~CloudDocs/Documents/MATLAB/ME31/x_vals.csv', pchip_x, delimiter=',')
+#np.savetxt('/Users/aidanbeckett/Library/Mobile Documents/com~apple~CloudDocs/Documents/MATLAB/ME31/y_vals.csv', pchip_y, delimiter=',')
